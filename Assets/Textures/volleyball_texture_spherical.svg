@@ -1,0 +1,22 @@
+<svg width="2048" height="1024" viewBox="0 0 2048 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- 
+    標準球形貼圖 (Equirectangular Projection)
+    專為 Unity Sphere 的 UV 設計
+    長寬比: 2:1
+  -->
+  <defs>
+    <style>
+      .bg { fill: #FFFFFF; } /* 白色背景 */
+      .blue { fill: #005cb9; } /* 藍色 */
+      .yellow { fill: #ffde00; } /* 黃色 */
+    </style>
+  </defs>
+  
+  <rect class="bg" width="2048" height="1024"/>
+
+  <!-- 模擬排球花紋 -->
+  <path class="blue" d="M512,0 C200,256 200,768 512,1024 L0,1024 L0,0 Z"/>
+  <path class="yellow" d="M1536,0 C1848,256 1848,768 1536,1024 L2048,1024 L2048,0 Z"/>
+  <path class="yellow" d="M512,0 C768,200 1280,200 1536,0 L1280,512 C1024,768 1024,768 768,512 Z"/>
+  <path class="blue" d="M512,1024 C768,824 1280,824 1536,1024 L1280,512 C1024,256 1024,256 768,512 Z"/>
+</svg>
