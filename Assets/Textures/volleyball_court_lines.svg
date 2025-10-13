@@ -1,0 +1,29 @@
+<svg width="1024" height="2048" viewBox="0 0 1024 2048" xmlns="http://www.w3.org/2000/svg">
+  <!-- 
+    排球場標線圖檔 (Volleyball Court Lines)
+    長寬比: 18m : 9m = 2:1
+    真實線寬: 5cm
+    計算: 5cm * (1024px / 900cm) = 5.7px
+    背景: 透明
+  -->
+  <defs>
+    <style>
+      .lines {
+        fill: none;
+        stroke: #FFFFFF; /* 白色線條 */
+        stroke-width: 5.7; /* 線條寬度 (對應 5cm) */
+      }
+    </style>
+  </defs>
+
+  <!-- 邊線與端線 (Boundary Lines) -->
+  <rect x="3" y="3" width="1018" height="2042" class="lines"/>
+
+  <!-- 中線 (Center Line) at 9m -->
+  <line x1="0" y1="1024" x2="1024" y2="1024" class="lines"/>
+
+  <!-- 攻擊線 (Attack Lines) at 6m and 12m -->
+  <line x1="0" y1="683" x2="1024" y2="683" class="lines"/>
+  <line x1="0" y1="1365" x2="1024" y2="1365" class="lines"/>
+</svg>
+
