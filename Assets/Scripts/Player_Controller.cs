@@ -1,56 +1,225 @@
 using UnityEngine;
+using System.Collections.Generic;
 
+/// <summary>
+/// 【永久 ID 播放模式】掛載在每個專屬球員模型上。
+/// 負責：1. 執行轉向和移動動畫。2. 處理隱形/現形 (MeshRenderer)。
+/// </summary>
 public class PlayerController : MonoBehaviour
 {
     [Header("模型設定")]
     [Tooltip("模型中心點(腰部)到臉部中心點的垂直高度差(公尺)")]
     public float pivotToHeadOffset = 0.8f;
+    [Tooltip("模型轉向目標點的速度")]
+    public float rotationSpeed = 10f;
+    [Tooltip("模型移動到目標點的平滑速度")]
+    public float moveSpeed = 15f; // 較快的Lerp速度確保能跟上數據
 
-    // 私有變數
+    // --- 私有變數 ---
     private Vector3 targetPosition;
     private bool hasTarget = false;
+    private Animator animator; 
+    private Vector3 lastPosition; 
+    private MeshRenderer modelRenderer; // 【關鍵】模型的渲染器
+
+    [Header("軌跡與散點視覺化")]
+    public float lineThickness = 0.05f;
+    public float pointSize = 0.03f;
+    public bool showPointCloud = true; // 可從 Inspector 開關散點
+
+    private LineRenderer lineRenderer;
+    private GameObject pointCloudParent;
+    private Color playerColor;
+    private bool isHighlighted = false;
+    private Material trajectoryMaterial;
+    private GameObject pointPrefab;
 
     void Start()
     {
-        // 初始設定為沒有目標
         targetPosition = transform.position;
+        lastPosition = transform.position;
         hasTarget = false;
+
+        // 獲取 MeshRenderer 和 Animator
+        modelRenderer = GetComponentInChildren<MeshRenderer>();
+        animator = GetComponentInChildren<Animator>();
+        
+        // 初始狀態設為隱形 (等待數據命令)
+        if (modelRenderer != null)
+        {
+            modelRenderer.enabled = false; 
+        }
+
+        if (animator == null)
+        {
+            // 警告：您的模型需要有 Animator 元件才能播放動畫
+            // Debug.LogWarning("在 " + gameObject.name + " 上找不到 Animator 元件，將無法播放動畫。"); 
+        }
     }
 
     void Update()
     {
-        // 如果有目標位置，就平滑地移動過去
+        // --- 1. 位置與方向更新 ---
         if (hasTarget)
         {
-            // 使用 Lerp 讓移動更平滑，避免瞬移
-            transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * 15f);
+            // A. 方向 (Orientation): 平滑轉向目標點
+            Vector3 targetDirection = targetPosition - transform.position;
+            targetDirection.y = 0; 
+
+            if (targetDirection.magnitude > 0.1f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+            }
+
+            // B. 位置 (Position): 平滑移動
+            transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * moveSpeed);
         }
+
+        // --- 2. 動畫控制 (即使沒有目標，也要計算速度讓動畫回到 Idle) ---
+        Vector3 velocity = (transform.position - lastPosition) / Time.deltaTime;
+        float speed = new Vector3(velocity.x, 0, velocity.z).magnitude;
+
+        if (animator != null)
+        {
+            // 將速度值傳遞給 Animator 的 "Speed" 參數
+            animator.SetFloat("Speed", speed);
+        }
+
+        lastPosition = transform.position;
     }
 
     /// <summary>
-    /// 由 PlayersManager 呼叫，用來更新這個球員這一幀應該要去的位置
+    /// 由 PlayersManager 呼叫，設定位置並讓模型【現形】。
     /// </summary>
-    /// <param name="newPosition">從 JSON 讀取的原始臉部中心點座標</param>
     public void SetTargetPosition(Vector3 newPosition)
     {
-        // **【核心修正 2】** 進行垂直位移修正
-        // 將目標位置向下平移，讓模型的腰部對齊臉部數據點
+        // 進行垂直位移修正
         targetPosition = new Vector3(
             newPosition.x,
-            newPosition.y - pivotToHeadOffset, // 向下修正
+            newPosition.y - pivotToHeadOffset, 
             newPosition.z
         );
         
         hasTarget = true;
+        // 讓模型現形 (憑空出現)
+        if (modelRenderer != null)
+        {
+            modelRenderer.enabled = true;
+        }
     }
 
     /// <summary>
-    /// 由 PlayersManager 呼叫，當這一幀沒有數據時，告知此球員
+    /// 由 PlayersManager 呼叫，當數據間隙或 track_id 消失時，讓模型【隱形】。
     /// </summary>
     public void SetNoTarget()
     {
-        hasTarget = false;
-        // 這裡可以加入待機動畫等邏輯
+        // 速度 Lerp 會自動停止，並觸發 Idle 動畫
+        hasTarget = false; 
+        // 讓模型隱形 (憑空消失)
+        if (modelRenderer != null)
+        {
+            modelRenderer.enabled = false;
+        }
+    }
+
+    /// <summary>
+    /// 由 PlayersManager 在 Instantiate 後呼叫，傳入完整歷史軌跡以及繪製用的材質與散點 Prefab
+    /// </summary>
+    public void InitializeTrajectory(List<Vector3> fullPath, Material defaultMaterial, GameObject pointPrefab)
+    {
+        if (fullPath == null || fullPath.Count == 0) return;
+
+        this.pointPrefab = pointPrefab;
+        trajectoryMaterial = defaultMaterial;
+
+        // 隨機生成一個較亮的顏色
+        playerColor = Random.ColorHSV(0f, 1f, 0.8f, 1f, 0.8f, 1f);
+
+        // 設定 LineRenderer
+        lineRenderer = gameObject.AddComponent<LineRenderer>();
+        if (trajectoryMaterial != null)
+        {
+            lineRenderer.material = trajectoryMaterial;
+        }
+        lineRenderer.startWidth = lineThickness;
+        lineRenderer.endWidth = lineThickness;
+        lineRenderer.positionCount = fullPath.Count;
+        lineRenderer.useWorldSpace = true;
+
+        // 寫入座標（同時做 pivotToHeadOffset 校正）
+        for (int i = 0; i < fullPath.Count; i++)
+        {
+            Vector3 correctedPos = new Vector3(fullPath[i].x, fullPath[i].y - pivotToHeadOffset, fullPath[i].z);
+            lineRenderer.SetPosition(i, correctedPos);
+        }
+
+        // 生成散點
+        pointCloudParent = new GameObject("PointCloud");
+        pointCloudParent.transform.SetParent(this.transform);
+        pointCloudParent.transform.localPosition = Vector3.zero;
+
+        if (pointPrefab != null)
+        {
+            foreach (Vector3 pos in fullPath)
+            {
+                Vector3 correctedPos = new Vector3(pos.x, pos.y - pivotToHeadOffset, pos.z);
+                GameObject point = Instantiate(pointPrefab, correctedPos, Quaternion.identity, pointCloudParent.transform);
+                point.transform.localScale = Vector3.one * pointSize;
+
+                Renderer pointRenderer = point.GetComponent<Renderer>();
+                if (pointRenderer != null && trajectoryMaterial != null)
+                {
+                    pointRenderer.material = trajectoryMaterial;
+                    Color c = new Color(playerColor.r, playerColor.g, playerColor.b, 0.3f);
+                    pointRenderer.material.color = c;
+                }
+            }
+        }
+
+        // 初始為半透明
+        UpdateTrajectoryAppearance();
+    }
+
+    void LateUpdate()
+    {
+        if (pointCloudParent != null && pointCloudParent.activeSelf != showPointCloud)
+        {
+            pointCloudParent.SetActive(showPointCloud);
+        }
+    }
+
+    void OnMouseDown()
+    {
+        isHighlighted = !isHighlighted;
+        UpdateTrajectoryAppearance();
+    }
+
+    private void UpdateTrajectoryAppearance()
+    {
+        if (lineRenderer == null) return;
+
+        float alpha = isHighlighted ? 1.0f : 0.2f;
+        Color displayColor = new Color(playerColor.r, playerColor.g, playerColor.b, alpha);
+
+        lineRenderer.startColor = displayColor;
+        lineRenderer.endColor = displayColor;
+        
+        if (pointCloudParent != null)
+        {
+            foreach (Transform child in pointCloudParent.transform)
+            {
+                var r = child.GetComponent<Renderer>();
+                if (r != null)
+                {
+                    Color c = new Color(playerColor.r, playerColor.g, playerColor.b, isHighlighted ? 1f : 0.3f);
+                    r.material.color = c;
+                }
+            }
+        }
+
+        // sortingOrder 只有在有合適材質或 Renderer 時才有效
+        // lineRenderer.sortingOrder requires a Sprite/Particle shader to be visible in 2D sorting layers; keep it for possible use
+        lineRenderer.sortingOrder = isHighlighted ? 10 : 0;
     }
 }
-

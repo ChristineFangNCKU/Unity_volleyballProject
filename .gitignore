@@ -97,3 +97,6 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# 忽略所有 StreamingAssets 中的大型檔案
+Assets/StreamingAssets/HDR80_A_Live_20230205_132958_000.mov_show_data.json
