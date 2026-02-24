@@ -10,6 +10,8 @@ public class PlayerController : MonoBehaviour
     [Header("模型設定")]
     [Tooltip("模型中心點(腰部)到臉部中心點的垂直高度差(公尺)")]
     public float pivotToHeadOffset = 0.8f;
+    [Tooltip("自動算出的球員真實頭部高度 (由 PlayersManager 傳入)")]
+    public float calculatedHeadHeight = 1.8f; 
     [Tooltip("模型轉向目標點的速度")]
     public float rotationSpeed = 10f;
     [Tooltip("模型移動到目標點的平滑速度")]
@@ -26,6 +28,8 @@ public class PlayerController : MonoBehaviour
     public float lineThickness = 0.05f;
     public float pointSize = 0.03f;
     public bool showPointCloud = true; // 可從 Inspector 開關散點
+    [Tooltip("軌跡與散點貼近地板的偏移量（公尺），預設 0.02m = 2cm）")]
+    public float trajectoryFloorOffset = 0.02f;
 
     private LineRenderer lineRenderer;
     private GameObject pointCloudParent;
@@ -94,10 +98,10 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     public void SetTargetPosition(Vector3 newPosition)
     {
-        // 進行垂直位移修正
+        // 進行垂直位移修正：使用動態計算出的頭部高度
         targetPosition = new Vector3(
             newPosition.x,
-            newPosition.y - pivotToHeadOffset, 
+            newPosition.y - calculatedHeadHeight, 
             newPosition.z
         );
         
@@ -126,10 +130,12 @@ public class PlayerController : MonoBehaviour
     /// <summary>
     /// 由 PlayersManager 在 Instantiate 後呼叫，傳入完整歷史軌跡以及繪製用的材質與散點 Prefab
     /// </summary>
-    public void InitializeTrajectory(List<Vector3> fullPath, Material defaultMaterial, GameObject pointPrefab)
+    public void InitializeTrajectory(List<Vector3> fullPath, Material defaultMaterial, GameObject pointPrefab, float headHeight)
     {
         if (fullPath == null || fullPath.Count == 0) return;
 
+        // 【新增】接收直方圖算出來的身高
+        this.calculatedHeadHeight = headHeight;
         this.pointPrefab = pointPrefab;
         trajectoryMaterial = defaultMaterial;
 
@@ -147,11 +153,11 @@ public class PlayerController : MonoBehaviour
         lineRenderer.positionCount = fullPath.Count;
         lineRenderer.useWorldSpace = true;
 
-        // 寫入座標（同時做 pivotToHeadOffset 校正）
+        // 【修正】強制將軌跡線貼在地板表面上方 (使用 Inspector 可調整的偏移量)
         for (int i = 0; i < fullPath.Count; i++)
         {
-            Vector3 correctedPos = new Vector3(fullPath[i].x, fullPath[i].y - pivotToHeadOffset, fullPath[i].z);
-            lineRenderer.SetPosition(i, correctedPos);
+            Vector3 floorPos = new Vector3(fullPath[i].x, trajectoryFloorOffset, fullPath[i].z);
+            lineRenderer.SetPosition(i, floorPos);
         }
 
         // 生成散點
@@ -163,8 +169,9 @@ public class PlayerController : MonoBehaviour
         {
             foreach (Vector3 pos in fullPath)
             {
-                Vector3 correctedPos = new Vector3(pos.x, pos.y - pivotToHeadOffset, pos.z);
-                GameObject point = Instantiate(pointPrefab, correctedPos, Quaternion.identity, pointCloudParent.transform);
+                // 【修正】散點也強制貼在地板表面上方 (使用 Inspector 可調整的偏移量)
+                Vector3 floorPos = new Vector3(pos.x, trajectoryFloorOffset, pos.z);
+                GameObject point = Instantiate(pointPrefab, floorPos, Quaternion.identity, pointCloudParent.transform);
                 point.transform.localScale = Vector3.one * pointSize;
 
                 Renderer pointRenderer = point.GetComponent<Renderer>();

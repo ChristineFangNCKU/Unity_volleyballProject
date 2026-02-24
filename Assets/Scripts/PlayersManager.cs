@@ -142,9 +142,10 @@ public class PlayersManager : MonoBehaviour
         totalTrackIds = uniqueTrackIds.Count;
         Debug.Log($"共偵測到 {uniqueTrackIds.Count} 個獨立 Track ID，已生成 {permanentPlayers.Count} 個永久模型。");
 
-        // --- 組合每個 track_id 的完整歷史座標並傳給 PlayerController ---
-        // 建立 trackId -> List<Vector3>
+        // --- 組合每個 track_id 的完整歷史座標，並收集 Y 軸高度 ---
         var trackPaths = new Dictionary<int, List<Vector3>>();
+        var trackAllYValues = new Dictionary<int, List<float>>(); // 收集 Y 值
+
         var orderedFrameIds = allFramesData.Keys.ToList();
         orderedFrameIds.Sort();
 
@@ -156,26 +157,63 @@ public class PlayersManager : MonoBehaviour
             {
                 if (t.pt3d == null || t.pt3d.Count < 3) continue;
                 Vector3 pos = ConvertDataToUnityPosition(t.pt3d);
+
                 if (!trackPaths.ContainsKey(t.track_id)) trackPaths[t.track_id] = new List<Vector3>();
                 trackPaths[t.track_id].Add(pos);
+
+                if (!trackAllYValues.ContainsKey(t.track_id)) trackAllYValues[t.track_id] = new List<float>();
+                trackAllYValues[t.track_id].Add(pos.y);
             }
         }
 
-        // 傳送路徑給對應的 PlayerController
+        // --- 執行直方圖眾數法 (Histogram Mode) 計算每人真實身高 ---
+        float binSize = 0.02f; // 設定 2 公分為一個分箱區間 (Bin)
+
         foreach (var kv in permanentPlayers)
         {
             int trackId = kv.Key;
             var controller = kv.Value;
             if (controller == null) continue;
 
+            float playerTrueHeight = 1.8f; // 預設防呆高度
+
+            if (trackAllYValues.TryGetValue(trackId, out var yList) && yList.Count > 0)
+            {
+                Dictionary<int, int> histogram = new Dictionary<int, int>();
+                
+                // 1. 將所有的 Y 值丟進對應的箱子 (O(N) 複雜度)
+                foreach (float y in yList)
+                {
+                    int bin = Mathf.RoundToInt(y / binSize);
+                    if (!histogram.ContainsKey(bin)) histogram[bin] = 0;
+                    histogram[bin]++;
+                }
+
+                // 2. 找出數據最多的那個箱子 (眾數)
+                int maxCount = 0;
+                int modeBin = 0;
+                foreach (var binKvp in histogram)
+                {
+                    if (binKvp.Value > maxCount)
+                    {
+                        maxCount = binKvp.Value;
+                        modeBin = binKvp.Key;
+                    }
+                }
+
+                // 3. 還原成實際高度
+                playerTrueHeight = modeBin * binSize;
+                Debug.Log($"[身高演算法] Track ID {trackId} 的最常出現身高(眾數)為: {playerTrueHeight:F2}m (樣本數: {maxCount}/{yList.Count})");
+            }
+
+            // 4. 將算出專屬的身高傳給 Controller 進行初始化
             if (trackPaths.TryGetValue(trackId, out var pathList))
             {
-                controller.InitializeTrajectory(pathList, lineMaterial, pointPrefab);
+                controller.InitializeTrajectory(pathList, lineMaterial, pointPrefab, playerTrueHeight);
             }
             else
             {
-                // 若該 track 沒有歷史路徑，建立一個空列表
-                controller.InitializeTrajectory(new List<Vector3>(), lineMaterial, pointPrefab);
+                controller.InitializeTrajectory(new List<Vector3>(), lineMaterial, pointPrefab, playerTrueHeight);
             }
         }
     }
