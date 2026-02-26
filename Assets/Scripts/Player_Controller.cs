@@ -66,27 +66,36 @@ public class PlayerController : MonoBehaviour
         // --- 1. 位置與方向更新 ---
         if (hasTarget)
         {
-            // A. 方向 (Orientation): 平滑轉向目標點
-            Vector3 targetDirection = targetPosition - transform.position;
-            targetDirection.y = 0; 
+            // B. 位置 (Position): 平滑移動 (先處理移動)
+            transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * moveSpeed);
 
-            if (targetDirection.magnitude > 0.1f)
+            // A. 方向 (Orientation): 永遠面朝球網 (Z = 9.0f)
+            float netZPosition = 9.0f;
+            Vector3 targetDirection;
+
+            // 判斷球員在哪個半場
+            if (transform.position.z < netZPosition)
             {
-                Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+                // 在 Z < 9 的半場，面向正前方 (0, 0, 1)
+                targetDirection = Vector3.forward; 
+            }
+            else
+            {
+                // 在 Z >= 9 的半場，面向正後方 (0, 0, -1)
+                targetDirection = Vector3.back; 
             }
 
-            // B. 位置 (Position): 平滑移動
-            transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * moveSpeed);
+            // 平滑轉身面朝球網
+            Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
         }
 
-        // --- 2. 動畫控制 (即使沒有目標，也要計算速度讓動畫回到 Idle) ---
+        // --- 2. 動畫控制 ---
         Vector3 velocity = (transform.position - lastPosition) / Time.deltaTime;
         float speed = new Vector3(velocity.x, 0, velocity.z).magnitude;
 
         if (animator != null)
         {
-            // 將速度值傳遞給 Animator 的 "Speed" 參數
             animator.SetFloat("Speed", speed);
         }
 
