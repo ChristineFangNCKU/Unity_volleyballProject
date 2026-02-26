@@ -8,6 +8,8 @@ using System.Collections.Generic;
 public class PlayerController : MonoBehaviour
 {
     [Header("模型設定")]
+    [Tooltip("你的 3D 模型在 Unity 裡的原始預設身高 (用來當縮放分母)")]
+    public float defaultModelHeight = 1.8f;
     [Tooltip("模型中心點(腰部)到臉部中心點的垂直高度差(公尺)")]
     public float pivotToHeadOffset = 0.8f;
     [Tooltip("自動算出的球員真實頭部高度 (由 PlayersManager 傳入)")]
@@ -145,6 +147,16 @@ public class PlayerController : MonoBehaviour
 
         // 【新增】接收直方圖算出來的身高
         this.calculatedHeadHeight = headHeight;
+        // --- 【新增】依照真實身高縮放 3D 模型 ---
+        // 計算比例 = 真實身高 / 模型預設身高
+        float scaleRatio = calculatedHeadHeight / defaultModelHeight;
+        
+        // 使用等比例縮放 (X, Y, Z 都縮放)，這樣球員才不會變成竹竿人或被壓扁
+        transform.localScale = new Vector3(scaleRatio, scaleRatio, scaleRatio);
+        
+        // 印出 Log 讓你確認每個球員被放大了多少
+        Debug.Log($"{gameObject.name} 真實身高: {calculatedHeadHeight:F2}m, 縮放比例: {scaleRatio:F2}");
+        // ----------------------------------------
         this.pointPrefab = pointPrefab;
         trajectoryMaterial = defaultMaterial;
 
