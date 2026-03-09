@@ -101,3 +101,12 @@ InitTestScene*.unity*
 # 忽略所有 StreamingAssets 中的大型檔案
 Assets/StreamingAssets/HDR80_A_Live_20230205_132958_000.mov_show_data.json
 Assets/StreamingAssets/*.json
+
+# ----------------------------------------------------
+# Custom: Data Processing & Large File Protection
+# ----------------------------------------------------
+# Ignore all raw 1GB+ JSON files in the processing folder
+Data_Processing/Raw_Matches/*.json
+
+# Track the lightweight processed matches for Unity
+!Assets/StreamingAssets/Matches/*.json

@@ -39,6 +39,7 @@ public class PlayerController : MonoBehaviour
     private bool isHighlighted = false;
     private Material trajectoryMaterial;
     private GameObject pointPrefab;
+    private SkeletonVisualizer skeletonVisualizer;
 
     void Start()
     {
@@ -61,6 +62,8 @@ public class PlayerController : MonoBehaviour
             // 警告：您的模型需要有 Animator 元件才能播放動畫
             // Debug.LogWarning("在 " + gameObject.name + " 上找不到 Animator 元件，將無法播放動畫。"); 
         }
+
+        skeletonVisualizer = gameObject.AddComponent<SkeletonVisualizer>();
     }
 
     void Update()
@@ -136,6 +139,7 @@ public class PlayerController : MonoBehaviour
         {
             modelRenderer.enabled = false;
         }
+        if (skeletonVisualizer != null) skeletonVisualizer.HideSkeleton();
     }
 
     /// <summary>
@@ -249,5 +253,13 @@ public class PlayerController : MonoBehaviour
         // sortingOrder 只有在有合適材質或 Renderer 時才有效
         // lineRenderer.sortingOrder requires a Sprite/Particle shader to be visible in 2D sorting layers; keep it for possible use
         lineRenderer.sortingOrder = isHighlighted ? 10 : 0;
+    }
+
+    public void UpdateSkeletonData(List<List<float>> kpts)
+    {
+        if (skeletonVisualizer != null)
+        {
+            skeletonVisualizer.UpdateSkeleton(kpts);
+        }
     }
 }

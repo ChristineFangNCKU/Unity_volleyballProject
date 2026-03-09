@@ -21,6 +21,7 @@ public class VolleyballController : MonoBehaviour
     public int endFrameId = 0;
     [Tooltip("是否自動開始播放")]
     public bool autoPlay = true;
+    public string ballJsonFileName = "ball_data.json";
     
     [Header("除錯信息")]
     public int currentFrameId = 0;
@@ -96,7 +97,7 @@ public class VolleyballController : MonoBehaviour
 
     void LoadBallData()
     {
-        string filePath = Path.Combine(Application.streamingAssetsPath, "ball_data.json");
+        string filePath = Path.Combine(Application.streamingAssetsPath, "Matches", ballJsonFileName);
         if (File.Exists(filePath))
         {
             string jsonData = File.ReadAllText(filePath);

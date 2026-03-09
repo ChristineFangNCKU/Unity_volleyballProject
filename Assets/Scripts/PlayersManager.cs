@@ -22,6 +22,7 @@ public class PlayersManager : MonoBehaviour
     public int endFrameId = 0;
     [Tooltip("是否自動開始播放")]
     public bool autoPlay = true;
+    public string gnnJsonFileName = "Cleaned_GNN_Dataset.json";
 
     [Header("模型設定")]
     [Tooltip("用於複製生成的球員 Prefab (必須掛載 PlayerController)")]
@@ -46,6 +47,7 @@ public class PlayersManager : MonoBehaviour
     private Dictionary<int, PlayerController> permanentPlayers; // Key: track_id, Value: Model
     private Dictionary<int, Vector3> currentFramePlayerData;
     private Dictionary<int, Vector3> lastValidPlayerData;
+    private Dictionary<int, Dictionary<int, List<List<float>>>> gnnDataDict;
     
     // 時間追蹤
     private float elapsedTime = 0f;
@@ -97,7 +99,7 @@ public class PlayersManager : MonoBehaviour
         if (allFramesData.TryGetValue(targetFrameId, out var frameData))
         {
             // 找到數據，更新所有球員的位置
-            UpdatePlayersPositions(frameData);
+            UpdatePlayersPositions(frameData, targetFrameId);
             currentFrameId = targetFrameId;
         }
         else if (lastValidPlayerData != null)
@@ -234,7 +236,7 @@ public class PlayersManager : MonoBehaviour
         // 嘗試設置初始位置
         if (allFramesData.TryGetValue(startFrameId, out var initialData))
         {
-            UpdatePlayersPositions(initialData);
+            UpdatePlayersPositions(initialData, startFrameId);
         }
         
         Debug.Log($"開始播放球員動畫，起始幀ID: {startFrameId}");
@@ -261,7 +263,7 @@ public class PlayersManager : MonoBehaviour
     }
 
     // **【新增】** 更新所有球員的位置
-    void UpdatePlayersPositions(FrameData frameData)
+    void UpdatePlayersPositions(FrameData frameData, int frameId)
     {
         currentFramePlayerData = new Dictionary<int, Vector3>();
         
@@ -287,6 +289,18 @@ public class PlayersManager : MonoBehaviour
                     if (permanentPlayers.TryGetValue(track3d.track_id, out var playerController))
                     {
                         playerController.SetTargetPosition(position);
+
+                        // Feed Skeleton Data if available
+                        if (gnnDataDict != null && 
+                            gnnDataDict.TryGetValue(frameId, out var frameGnnData) && 
+                            frameGnnData.TryGetValue(track3d.track_id, out var kpts))
+                        {
+                            playerController.UpdateSkeletonData(kpts);
+                        }
+                        else
+                        {
+                            playerController.UpdateSkeletonData(null); // Hide if no data
+                        }
                     }
                 }
             }
@@ -309,7 +323,7 @@ public class PlayersManager : MonoBehaviour
     /// </summary>
     private void LoadAndParsePlayerData()
     {
-        string path = Path.Combine(Application.streamingAssetsPath, jsonFileName);
+        string path = Path.Combine(Application.streamingAssetsPath, "Matches", jsonFileName);
         if (!File.Exists(path))
         {
             Debug.LogError($"[PlayersManager] JSON 檔案未找到: {path}");
@@ -330,6 +344,7 @@ public class PlayersManager : MonoBehaviour
                 {
                     UpdateFrameRange();
                     Debug.Log($"[PlayersManager] 成功載入 {totalFrames} 幀球員數據，幀ID範圍: {actualStartFrame}-{actualEndFrame}");
+                    LoadGnnData();
                 }
                 else
                 {
@@ -410,6 +425,43 @@ public class PlayersManager : MonoBehaviour
         if (endFrameId <= 0)
         {
             endFrameId = actualEndFrame;
+        }
+    }
+
+    private void LoadGnnData()
+    {
+        string path = Path.Combine(Application.streamingAssetsPath, "Matches", gnnJsonFileName);
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            // Parse: string frame_id -> string track_id -> List<List<float>>
+            var rawData = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, List<List<float>>>>>(json);
+            
+            gnnDataDict = new Dictionary<int, Dictionary<int, List<List<float>>>>();
+            
+            if (rawData != null)
+            {
+                foreach (var frameKvp in rawData)
+                {
+                    if (int.TryParse(frameKvp.Key, out int frameId))
+                    {
+                        var trackDict = new Dictionary<int, List<List<float>>>();
+                        foreach (var trackKvp in frameKvp.Value)
+                        {
+                            if (int.TryParse(trackKvp.Key, out int trackId))
+                            {
+                                trackDict[trackId] = trackKvp.Value;
+                            }
+                        }
+                        gnnDataDict[frameId] = trackDict;
+                    }
+                }
+                Debug.Log($"[PlayersManager] 成功載入 GNN 骨架數據，共 {gnnDataDict.Count} 幀。");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[PlayersManager] 找不到 GNN 數據檔案: {path}");
         }
     }
 }
