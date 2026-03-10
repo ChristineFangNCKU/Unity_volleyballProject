@@ -13,7 +13,7 @@ public class PlayersManager : MonoBehaviour
 {
     [Header("播放設定")]
     [Tooltip("要讀取的 JSON 檔案名稱")]
-    public string jsonFileName = "HDR80_A_LIVE_20230205_132958_000.mov_show_data.json";
+    public string jsonFileName = "HDR80_A_LIVE_20230205_132958_000_Lite.json";
     [Tooltip("數據的幀率（fps）")]
     public float frameRate = 60f;
     [Tooltip("開始播放的幀ID（0表示從最小幀開始）")]
@@ -463,6 +463,13 @@ public class PlayersManager : MonoBehaviour
         {
             Debug.LogWarning($"[PlayersManager] 找不到 GNN 數據檔案: {path}");
         }
+    }
+
+    // --- Public accessors for DevOverlayManager ---
+    public bool IsPlaying => isPlaying;
+    public Dictionary<int, PlayerController> GetActivePlayers()
+    {
+        return permanentPlayers;
     }
 }
 

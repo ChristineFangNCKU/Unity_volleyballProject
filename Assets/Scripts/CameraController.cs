@@ -16,7 +16,7 @@ public class CameraController : MonoBehaviour
     [Tooltip("鏡頭與目標的最小距離")]
     public float minDistance = 5.0f;
     [Tooltip("鏡頭與目標的最大距離")]
-    public float maxDistance = 30.0f;
+    public float maxDistance = 100.0f;
 
     [Header("鍵盤與觸控板支援")]
     [Tooltip("按住此鍵搭配觸控板來旋轉視角 (Mac)")]
@@ -56,6 +56,9 @@ public class CameraController : MonoBehaviour
 
         if (target)
         {
+            // 【關鍵修正】：強制把旋轉中心(Target)移到這台攝影機的「正前方 20 公尺處」
+            // 這樣 Orbit 的數學公式就會以這個新位置為圓心，確保不會發生瞬間位移跳動
+            target.position = transform.position + transform.forward * 20f;
             distance = Vector3.Distance(transform.position, target.position);
         }
 
