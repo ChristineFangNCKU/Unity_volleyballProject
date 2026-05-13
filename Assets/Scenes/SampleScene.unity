@@ -941,17 +941,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ballDiameter: 0.21
-  frameRate: 60
-  startFrameId: 111
-  endFrameId: 0
-  autoPlay: 1
-  ballJsonFileName: ball_data.json
+  masterTimeline: {fileID: 1493629780}
+  ballJsonFileName: HDR80_A_Live_20230204_143644_000.json
   currentFrameId: 0
   hasValidData: 0
   totalFrames: 0
   actualStartFrame: 0
   actualEndFrame: 0
-  pathDataPreview: []
 --- !u!1 &491615428
 GameObject:
   m_ObjectHideFlags: 0
@@ -1329,6 +1325,38 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1140372206
+GameObject:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1140372207}
+  m_Layer: 0
+  m_Name: Unity-RecorderSessions
+  m_TagString: EditorOnly
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1140372207
+Transform:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1140372206}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2066768932}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1145996856
 GameObject:
   m_ObjectHideFlags: 0
@@ -1635,18 +1663,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9dd7217ed49e04af99dc04f183bc0280, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jsonFileName: HDR80_A_Live_20230205_132958_000_Lite.json
+  jsonFileName: HDR80_A_Live_20230204_144714_000.mov_show_data_Lite.json
   frameRate: 60
   startFrameId: 0
-  endFrameId: 0
+  endFrameId: -1
   autoPlay: 1
-  gnnJsonFileName: Cleaned_GNN_Dataset.json
+  gnnJsonFileName: HDR80_A_Live_20230204_144714_000.mov_show_data_GNN.json
   playerPrefab: {fileID: 9069932107194934054, guid: 6ab171115487e4a50b10398376fd5990, type: 3}
   playerContainer: {fileID: 1599145453}
   lineMaterial: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
   pointPrefab: {fileID: 6380041832116955812, guid: 130c45c337fd042448dc664b50703025, type: 3}
   currentFrameId: 0
-  hasValidData: 0
+  hasValidData: 1
   totalFrames: 0
   actualStartFrame: 0
   actualEndFrame: 0
@@ -1728,8 +1756,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playersManager: {fileID: 1493629780}
   mainCamera: {fileID: 330585545}
-  videoFileName: HDR80_A_Live_20230205_132958_000.mov
-  videoFrameOffset: 0
 --- !u!4 &1674027526
 Transform:
   m_ObjectHideFlags: 0
@@ -1855,6 +1881,37 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1951387643}
   m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &2066768931
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2066768932}
+  m_Layer: 0
+  m_Name: 50c0e353-03fc-41e2-8209-a55ed1d5a5bc
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2066768932
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2066768931}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1140372207}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2100355717
 GameObject:
   m_ObjectHideFlags: 0
@@ -2025,3 +2082,4 @@ SceneRoots:
   - {fileID: 1145996860}
   - {fileID: 1599145453}
   - {fileID: 1674027526}
+  - {fileID: 1140372207}
